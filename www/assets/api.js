@@ -122,29 +122,58 @@
   }
 
   // ---------- HTTP к Top Academy ----------
+  // User-Agent как у обычного мобильного Chrome: без него сервер Top Academy
+  // может отклонять запросы из приложения (нативный UA Android ему не нравится).
+  const MOBILE_UA = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36";
+  const BASE_HEADERS = {
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "ru_RU, ru",
+    "Content-Type": "application/json",
+    "Origin": "https://journal.top-academy.ru",
+    "Referer": "https://journal.top-academy.ru/",
+    "User-Agent": MOBILE_UA,
+  };
+
+  // Единый запрос: нативный CapacitorHttp на телефоне, обычный fetch в браузере.
+  async function httpRequest({ url, method = "GET", headers = {}, data }) {
+    const native = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorHttp;
+    const allHeaders = { ...BASE_HEADERS, ...headers };
+    if (native) {
+      const r = await native.request({
+        url, method, headers: allHeaders, data,
+        connectTimeout: 25000, readTimeout: 25000,
+      });
+      let body = r.data;
+      if (typeof body === "string") { try { body = JSON.parse(body); } catch (_) {} }
+      return { status: r.status, data: body };
+    }
+    const h = { ...allHeaders };
+    delete h["User-Agent"]; delete h["Origin"]; delete h["Referer"];
+    const r = await fetch(url, { method, headers: h, body: data !== undefined ? JSON.stringify(data) : undefined });
+    let body;
+    const text = await r.text();
+    try { body = JSON.parse(text); } catch (_) { body = text; }
+    return { status: r.status, data: body };
+  }
+
   async function getAccessToken(username, password) {
     let r;
     try {
-      r = await fetch(`${API_BASE}/auth/login`, {
+      r = await httpRequest({
+        url: `${API_BASE}/auth/login`,
         method: "POST",
-        headers: {
-          accept: "application/json, text/plain, */*",
-          "accept-language": "ru_RU, ru",
-          "content-type": "application/json",
-          origin: "https://journal.top-academy.ru",
-          referer: "https://journal.top-academy.ru/",
-        },
-        body: JSON.stringify({ application_key: APPLICATION_KEY, id_city: null, password, username }),
+        data: { application_key: APPLICATION_KEY, id_city: null, password, username },
       });
-    } catch (_) {
-      throw new HttpError(502, "Не удалось связаться с сервером Top Academy. Проверьте интернет.");
+    } catch (e) {
+      throw new HttpError(502, `Нет связи с Top Academy: ${(e && e.message) || e}`);
     }
-    if (!r.ok) {
-      if ([400, 401, 403].includes(r.status)) throw new HttpError(401, "Вход был отклонён. Проверьте введённые логин и пароль.");
-      throw new HttpError(502, `Сервер Top Academy вернул ошибку HTTP ${r.status}.`);
+    if (r.status !== 200) {
+      const raw = typeof r.data === "string" ? r.data : JSON.stringify(r.data || {});
+      console.log("login failed", r.status, raw.slice(0, 300));
+      if (r.status === 401) throw new HttpError(401, "Неверный логин или пароль (HTTP 401).");
+      throw new HttpError(401, `Вход отклонён (HTTP ${r.status}). ${raw.replace(/<[^>]*>/g, " ").trim().slice(0, 120)}`);
     }
-    let data;
-    try { data = await r.json(); } catch (_) { throw new HttpError(502, "Top Academy вернул ответ в неожиданном формате."); }
+    const data = r.data;
     const find = (obj, depth = 0) => {
       if (depth > 4 || !obj || typeof obj !== "object") return null;
       for (const k of ["access_token", "token"]) {
@@ -167,20 +196,11 @@
     const url = `${API_BASE}${path}${qs.toString() ? "?" + qs : ""}`;
     let r;
     try {
-      r = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          Accept: "application/json, text/plain, */*",
-          "Accept-Language": "ru_RU, ru",
-          Origin: "https://journal.top-academy.ru",
-          Referer: "https://journal.top-academy.ru/",
-        },
-      });
+      r = await httpRequest({ url, headers: { Authorization: `Bearer ${token}` } });
     } catch (_) { return null; }
     if (r.status === 401 || r.status === 403) throw new TopAuthError("Сессия Top Academy истекла. Пожалуйста, войдите снова.");
-    if (!r.ok) return null;
-    try { return await r.json(); } catch (_) { return null; }
+    if (r.status !== 200) return null;
+    return typeof r.data === "object" ? r.data : null;
   }
 
   // ---------- профиль ----------
