@@ -1,0 +1,9 @@
+{
+  "name": "Student Hub",
+  "short_name": "Student Hub",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0c1320",
+  "theme_color": "#101827",
+  "icons": []
+}
