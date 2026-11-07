@@ -28,7 +28,24 @@
 
 ## 🚀 Как запустить?
 
-### 1. Клонирование репозитория
+### 1. Для WINDOWS через CMD или PowerShell:
 ```bash
-git clone <ссылка_на_твой_репозиторий>
-cd <папка_проекта>
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
+ИЛИ
+### 1. Для MacOS:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+---
+### 2. Запуск сервера:
+```bash
+uvicorn app:app --reload
+```
+---
+### 3. Запускаем в браузере:
+👉 **http://127.0.0.1:8000**
