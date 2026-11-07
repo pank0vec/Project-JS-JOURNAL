@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0c1320">
+  <meta name="description" content="Личный учебный журнал JS-JOURNAL (Top Academy)">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/assets/style.css?v=4">
+  <title>JS-JOURNAL</title>
+</head>
+<body>
+
+  <!-- ТОЛЬКО ВХОД В АККАУНТ -->
+  <section id="login-screen" class="login-screen">
+    <div class="login panel">
+      <div class="login-header">
+        <span class="brand">JS<span>.</span>JOURNAL</span>
+        <button id="theme-login" class="icon-btn" type="button" title="Переключить тему">☼</button>
+      </div>
+      <div class="eyebrow">ЛИЧНЫЙ КАБИНЕТ</div>
+      <h1>Войти в журнал</h1>
+      <p class="muted">Используй логин и пароль от своего аккаунта на сайте journal.top-academy.ru.</p>
+
+      <form id="login-form">
+        <label>
+          Логин:
+          <input name="username" autocomplete="username" placeholder="Например: ivanov_ct67" required>
+        </label>
+        <label>
+          Пароль:
+          <input name="password" type="password" autocomplete="current-password" placeholder="••••••••" required>
+        </label>
+        <label class="remember-row">
+          <input type="checkbox" id="remember-me" checked>
+          <span>Запомнить меня на моём ПК</span>
+        </label>
+        <button id="login-submit" class="primary" type="submit">ВОЙТИ В АККАУНТ</button>
+        <p id="login-error" class="error"></p>
+      </form>
+      <small>Пароль передаётся только для авторизации в официальном API Top Academy.</small>
+    </div>
+  </section>
+
+  <!-- ОБОЛОЧКА ЖУРНАЛА (СКРЫТА ДО ВХОДА): -->
+  <div id="app-shell" class="app" hidden>
+    <header class="topbar">
+      <a class="brand" href="#">JS<span>.</span>JOURNAL</a>
+      <div class="header-actions">
+        <span id="header-user" class="muted tiny"></span>
+        <button id="theme" class="icon-btn" type="button" title="Переключить тему">☼</button>
+      </div>
+    </header>
+
+    <div class="workspace-layout">
+      <!-- Меню навигации: -->
+      <nav id="nav">
+        <button data-tab="schedule" class="active">
+          <b>▦</b>
+          <span>Расписание</span>
+        </button>
+        <button data-tab="homework">
+          <b>▤</b>
+          <span>Домашка</span>
+          <i id="hw-badge" class="badge" hidden>0</i>
+        </button>
+        <button data-tab="grades">
+          <b>★</b>
+          <span>Оценки и посещаемость</span>
+          <i id="grade-dot" class="dot" hidden></i>
+        </button>
+        <button data-tab="profile">
+          <b>☺</b>
+          <span>Профиль</span>
+        </button>
+      </nav>
+
+      <!-- Контент выбранного раздела: -->
+      <main class="content-area">
+        <div class="topline">
+          <div>
+            <div class="eyebrow" id="today-label">УЧЕБНЫЙ ЖУРНАЛ</div>
+            <h1 id="page-title">Расписание</h1>
+          </div>
+          <button id="refresh" class="soft" type="button">↻ Обновить</button>
+        </div>
+
+        <!--РАСПИСАНИЕ -->
+        <div id="schedule-page" class="page">
+          <div class="schedule-controls">
+            <div class="segmented" id="schedule-mode">
+              <button type="button" data-mode="day" class="active">На день</button>
+              <button type="button" data-mode="week">На неделю</button>
+            </div>
+            <div class="datebar">
+              <button id="prev-day" class="soft" type="button" title="Назад">‹</button>
+              <strong id="date-title">Сегодня</strong>
+              <button id="today-btn" class="soft tiny-btn" type="button">Сегодня</button>
+              <button id="next-day" class="soft" type="button" title="Вперёд">›</button>
+            </div>
+          </div>
+          <div id="lessons" class="stack"></div>
+        </div>
+
+        <!-- ДОМАШНИЕ ЗАДАНИЯ: -->
+        <div id="homework-page" class="page" hidden>
+          <div class="filter-bar" id="hw-filters">
+            <button type="button" data-filter="all" class="chip active">Все</button>
+            <button type="button" data-filter="pending" class="chip">Активные</button>
+            <button type="button" data-filter="overdue" class="chip">Просроченные</button>
+            <button type="button" data-filter="review" class="chip">На проверке</button>
+            <button type="button" data-filter="done" class="chip">Проверенные</button>
+          </div>
+          <div id="homework-list" class="hw-grid"></div>
+        </div>
+
+        <!-- ОЦЕНКИ И ПОСЕЩАЕМОСТЬ: -->
+        <div id="grades-page" class="page" hidden>
+          <div id="grades-summary" class="stats-grid"></div>
+
+          <div class="grades-columns">
+            <section class="panel">
+              <h2>Посещаемость по предметам</h2>
+              <div id="attendance-list" class="stack"></div>
+            </section>
+
+            <section class="panel">
+              <h2>История оценок</h2>
+              <div id="grades-list" class="stack"></div>
+            </section>
+          </div>
+        </div>
+
+        <!-- ПРОФИЛЬ И НАСТРОЙКИ: -->
+        <div id="profile-page" class="page" hidden>
+          <div class="panel profile-card">
+            <div class="avatar" id="profile-avatar">S</div>
+            <h2 id="profile-name">Студент</h2>
+            <p id="profile-group" class="muted"></p>
+            <p id="profile-stream" class="muted tiny"></p>
+          </div>
+
+          <div class="panel">
+            <div class="setting">
+              <span>Светлая тема</span>
+              <label class="switch">
+                <input type="checkbox" id="theme-toggle">
+                <i></i>
+              </label>
+            </div>
+          </div>
+
+          <button id="logout" class="danger" type="button">Выйти из аккаунта</button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="toast" role="status"></div>
+  <script src="/assets/app.js?v=4"></script>
+</body>
+</html>
